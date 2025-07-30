@@ -1,36 +1,30 @@
 import streamlit as st
-from transformers import T5Tokenizer, T5ForConditionalGeneration
+from transformers import BartForConditionalGeneration, BartTokenizer
 
-# Load pretrained model
 @st.cache_resource
 def load_model():
-    tokenizer = T5Tokenizer.from_pretrained("t5-small")
-    model = T5ForConditionalGeneration.from_pretrained("t5-small")
+    tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
+    model = BartForConditionalGeneration.from_pretrained("facebook/bart-large-cnn")
     return tokenizer, model
 
 tokenizer, model = load_model()
 
 def correct_grammar(text):
-    input_text = "correct grammar: " + text
-    inputs = tokenizer(input_text, return_tensors="pt", max_length=128, truncation=True)
-    outputs = model.generate(**inputs, max_length=128, num_beams=4, early_stopping=True)
-    corrected = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return corrected
+    inputs = tokenizer([text], max_length=1024, return_tensors="pt", truncation=True)
+    summary_ids = model.generate(inputs["input_ids"], max_length=150, num_beams=4, early_stopping=True)
+    return tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
-# Streamlit UI
-st.set_page_config(page_title="Grammar Corrector", layout="centered")
-st.title("✍️ Grammar Correction using T5")
-st.markdown("Fix grammar in your sentences using a pretrained ML model.")
-
-user_input = st.text_area("Enter a sentence with grammar issues:")
+st.title("📝 Grammar Corrector using BART")
+user_input = st.text_area("Enter your sentence:")
 
 if st.button("Correct Grammar"):
     if user_input.strip():
         corrected = correct_grammar(user_input)
-        st.success("✅ Corrected Sentence:")
+        st.success("✅ Corrected:")
         st.write(corrected)
     else:
-        st.warning("⚠️ Please enter some text first.")
+        st.warning("⚠️ Please enter a sentence.")
+
 
 
 
