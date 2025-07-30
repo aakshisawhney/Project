@@ -1,29 +1,35 @@
 import streamlit as st
-from transformers import BartForConditionalGeneration, BartTokenizer
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 @st.cache_resource
 def load_model():
-    tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
-    model = BartForConditionalGeneration.from_pretrained("facebook/bart-large-cnn")
+    tokenizer = AutoTokenizer.from_pretrained("prithivida/grammar_error_correcter_v1")
+    model = AutoModelForSeq2SeqLM.from_pretrained("prithivida/grammar_error_correcter_v1")
     return tokenizer, model
 
 tokenizer, model = load_model()
 
 def correct_grammar(text):
-    inputs = tokenizer([text], max_length=1024, return_tensors="pt", truncation=True)
-    summary_ids = model.generate(inputs["input_ids"], max_length=150, num_beams=4, early_stopping=True)
-    return tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+    input_text = f"gec: {text}"
+    inputs = tokenizer.encode(input_text, return_tensors="pt", truncation=True)
+    outputs = model.generate(inputs, max_length=128, num_beams=5, early_stopping=True)
+    corrected = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return corrected
 
-st.title("📝 Grammar Corrector using BART")
-user_input = st.text_area("Enter your sentence:")
+st.set_page_config(page_title="Grammar Corrector", layout="centered")
+st.title("📝 Grammar Error Corrector")
+st.markdown("Enter a sentence with grammar mistakes:")
+
+text_input = st.text_area("Your sentence:")
 
 if st.button("Correct Grammar"):
-    if user_input.strip():
-        corrected = correct_grammar(user_input)
-        st.success("✅ Corrected:")
-        st.write(corrected)
+    if text_input.strip():
+        result = correct_grammar(text_input)
+        st.success("✅ Corrected Sentence:")
+        st.write(result)
     else:
-        st.warning("⚠️ Please enter a sentence.")
+        st.warning("⚠️ Please enter some text.")
+
 
 
 
